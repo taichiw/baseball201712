@@ -1,0 +1,39 @@
+@startuml
+
+component C
+component D
+component E
+component F
+component G
+component H
+component L
+component M
+component Bs
+component S
+component T
+component DB
+
+C --- F
+C --- G
+
+E --- L
+
+F -- G
+F -- H
+F --- L
+F - DB
+
+G --- T
+
+H --- T
+H --- DB
+
+L --- Bs
+L --- T
+L -- DB
+
+M -- T
+
+
+
+@enduml

@@ -1,0 +1,73 @@
+@startuml
+
+component C
+component D
+component E
+component F
+component G
+component H
+component L
+component M
+component Bs
+component S
+component T
+component DB
+
+C ---> F
+C ---> G
+C ---> S
+C --> DB
+
+E ---> Bs
+
+F ---> C
+F -> G
+F --> H
+F ---> L
+F --> S
+F --> DB
+
+G ---> C
+G -> F
+G ---> H
+G ---> T
+
+H --> F
+H ---> G
+H ---> S
+H ---> T
+H --> DB
+
+L ---> F
+L ---> Bs
+L ---> T
+L -> DB
+
+M ---> T
+
+Bs ---> E
+Bs ---> L
+Bs ---> T
+
+S ---> C
+S --> F
+S ---> H
+S ---> L
+S ---> T
+S --> DB
+
+T ---> G
+T ---> H
+T ---> L
+T ---> M
+T ---> Bs
+T ---> S
+
+DB --> C
+DB --> F
+DB --> H
+DB -> L
+DB --> S
+
+
+@enduml
