@@ -1,3 +1,4 @@
+import com.sun.deploy.util.StringUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -17,7 +18,8 @@ public class Main {
 	public static void main(String[] args) throws IOException {
 
 		final LocalDate OPENING_GAME_DAY = LocalDate.of(2017, 3, 31);
-		final LocalDate END_DAY = LocalDate.of(2017, 10, 13);
+		final LocalDate END_DAY = LocalDate.of(2017, 4, 1);
+//		 final LocalDate END_DAY = LocalDate.of(2017, 10, 13);
 
 		final List<String> ORDERS = Arrays.asList("1番", "2番", "3番", "4番", "5番", "6番", "7番", "8番", "9番");
 
@@ -33,20 +35,40 @@ public class Main {
 		}
 
 		System.out.println("得点");
+		List<String> runs = new ArrayList<>();
 		for (String team : eachTeamsSummary.keySet()) {
-			System.out.println(team + "," + eachTeamsSummary.get(team).stream().map(Player::getRun).map(String::valueOf).collect(Collectors.joining(",")));
+			runs.add(team + "," + eachTeamsSummary.get(team).stream()
+					.map(player -> String.valueOf(player.getRun()))
+					.collect(Collectors.joining(",")));
 		}
+		System.out.println(StringUtils.join(runs, "\n"));
+
+		System.out.println("得点 / 打席数");
+		List<String> runPerTPAs = new ArrayList<>();
+		for (String team : eachTeamsSummary.keySet()) {
+			runPerTPAs.add(team + "," + eachTeamsSummary.get(team).stream()
+					.map(Player::getRunPerTPA).map(aDouble -> String.format("%.3f", aDouble))
+					.collect(Collectors.joining(",")));
+		}
+		System.out.println(StringUtils.join(runPerTPAs, "\n"));
+
 		System.out.println("打点");
+		List<String> rbis = new ArrayList<>();
 		for (String team : eachTeamsSummary.keySet()) {
-			System.out.println(team + "," + eachTeamsSummary.get(team).stream().map(Player::getRbi).map(String::valueOf).collect(Collectors.joining(",")));
+			rbis.add(team + "," + eachTeamsSummary.get(team).stream()
+					.map(Player::getRbi).map(String::valueOf)
+					.collect(Collectors.joining(",")));
 		}
+		System.out.println(StringUtils.join(rbis, "\n"));
+
 		System.out.println("生還率");
+		List<String> surviveRates = new ArrayList<>();
 		for (String team : eachTeamsSummary.keySet()) {
-			String rate = eachTeamsSummary.get(team).stream()
-					.map(player -> Double.valueOf(player.getRun()) / Double.valueOf(player.getHit() + player.getBb())).map(aDouble -> String.format("%.3f", aDouble))
-					.collect(Collectors.joining(","));
-			System.out.println(team + "," + rate);
+			surviveRates.add(team + "," + eachTeamsSummary.get(team).stream()
+					.map(Player::getSurviveRate).map(aDouble -> String.format("%.3f", aDouble))
+					.collect(Collectors.joining(",")));
 		}
+		System.out.println(StringUtils.join(surviveRates, "\n"));
 	}
 
 	private static List<PlayersOnOneGame> getPlayersOnOneGames(LocalDate startDate, LocalDate endDate) {
@@ -111,9 +133,14 @@ public class Main {
 
 	private static void printScoreCorePart(List<PlayersOnOneGame> playerListList) {
 		List<Player> summaryForEachOrderList = makeSummaryForEachOrder(playerListList);
-		System.out.println("打順,得点,打点,四死球,安打");
+		System.out.println("打順,打数,得点,打点,四死球,安打");
 		summaryForEachOrderList.stream().forEach(
-				player -> System.out.println(player.getName() + "," + player.getRun() + "," + player.getRbi() + "," + player.getBb() + "," + player.getHit())
+				player -> System.out.println(player.getName()
+											 + "," + player.getBats()
+											 + "," + player.getRun()
+											 + "," + player.getRbi()
+											 + "," + player.getBb()
+											 + "," + player.getHit())
 		);
 
 	}
@@ -122,6 +149,12 @@ public class Main {
 		final List<Integer> ORDERS = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7, 8);
 		return ORDERS.stream().map(
 				currentOrder -> {
+					int bats = playerListList.parallelStream()
+							.filter(playersOnOneGame -> playersOnOneGame != null && playersOnOneGame.getPlayerList() != null && !playersOnOneGame.getPlayerList().isEmpty())
+							.mapToInt(players -> {
+								return players.getPlayerList().get(currentOrder).getBats();
+							})
+							.sum();
 					int run = playerListList.parallelStream()
 							.filter(playersOnOneGame -> playersOnOneGame != null && playersOnOneGame.getPlayerList() != null && !playersOnOneGame.getPlayerList().isEmpty())
 							.mapToInt(players -> {
@@ -154,6 +187,7 @@ public class Main {
 //					);
 					Player summaryForTheOrder = new Player();
 					summaryForTheOrder.setName(currentOrder + 1 + "番");
+					summaryForTheOrder.setBats(bats);
 					summaryForTheOrder.setBb(bb);
 					summaryForTheOrder.setHit(hit);
 					summaryForTheOrder.setRbi(rbi);
@@ -195,15 +229,7 @@ public class Main {
 						return position.length() > 0 && position.substring(0, 1).equals("(");
 					})
 					.map(tds -> {
-						Player player = new Player();
-						player.setName(tds.get(1).text());
-						player.setRun(Integer.valueOf(tds.get(4).text()));
-						player.setHit(Integer.valueOf(tds.get(5).text()));
-						player.setRbi(Integer.valueOf(tds.get(6).text()));
-						player.setBb(Integer.valueOf(tds.get(8).text()));
-
-
-						return player;
+						return Player.playerBuilderFromElements(tds);
 					})
 					.collect(Collectors.toList());
 
@@ -218,4 +244,5 @@ public class Main {
 			return null;
 		}
 	}
+
 }
