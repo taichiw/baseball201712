@@ -1,4 +1,3 @@
-import com.sun.deploy.util.StringUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -25,50 +24,19 @@ public class Main {
 
 		List<PlayersOnOneGame> playersListList = getPlayersOnOneGames(OPENING_GAME_DAY, END_DAY);
 		printScore(playersListList);
-
 		Map<String, List<PlayersOnOneGame>> eachTeamMap = playersListList.parallelStream()
 				.collect(Collectors.groupingBy(PlayersOnOneGame::getTeam));
 
+		EachTeamsSummary eachTeamsSummary = makeEachTeamsSummary(eachTeamMap);
+		eachTeamsSummary.printResult();
+	}
+
+	private static EachTeamsSummary makeEachTeamsSummary(Map<String, List<PlayersOnOneGame>> eachTeamMap) {
 		Map<String, List<Player>> eachTeamsSummary = new HashMap<>();
 		for (String team : eachTeamMap.keySet()) {
 			eachTeamsSummary.put(team, makeSummaryForEachOrder(eachTeamMap.get(team)));
 		}
-
-		System.out.println("得点");
-		List<String> runs = new ArrayList<>();
-		for (String team : eachTeamsSummary.keySet()) {
-			runs.add(team + "," + eachTeamsSummary.get(team).stream()
-					.map(player -> String.valueOf(player.getRun()))
-					.collect(Collectors.joining(",")));
-		}
-		System.out.println(StringUtils.join(runs, "\n"));
-
-		System.out.println("得点 / 打席数");
-		List<String> runPerTPAs = new ArrayList<>();
-		for (String team : eachTeamsSummary.keySet()) {
-			runPerTPAs.add(team + "," + eachTeamsSummary.get(team).stream()
-					.map(Player::getRunPerTPA).map(aDouble -> String.format("%.3f", aDouble))
-					.collect(Collectors.joining(",")));
-		}
-		System.out.println(StringUtils.join(runPerTPAs, "\n"));
-
-		System.out.println("打点");
-		List<String> rbis = new ArrayList<>();
-		for (String team : eachTeamsSummary.keySet()) {
-			rbis.add(team + "," + eachTeamsSummary.get(team).stream()
-					.map(Player::getRbi).map(String::valueOf)
-					.collect(Collectors.joining(",")));
-		}
-		System.out.println(StringUtils.join(rbis, "\n"));
-
-		System.out.println("生還率");
-		List<String> surviveRates = new ArrayList<>();
-		for (String team : eachTeamsSummary.keySet()) {
-			surviveRates.add(team + "," + eachTeamsSummary.get(team).stream()
-					.map(Player::getSurviveRate).map(aDouble -> String.format("%.3f", aDouble))
-					.collect(Collectors.joining(",")));
-		}
-		System.out.println(StringUtils.join(surviveRates, "\n"));
+		return new EachTeamsSummary(eachTeamsSummary);
 	}
 
 	private static List<PlayersOnOneGame> getPlayersOnOneGames(LocalDate startDate, LocalDate endDate) {
