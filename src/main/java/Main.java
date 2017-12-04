@@ -1,3 +1,4 @@
+import java.util.function.ToIntFunction;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -17,22 +18,22 @@ public class Main {
 	public static void main(String[] args) throws IOException {
 
 		final LocalDate OPENING_GAME_DAY = LocalDate.of(2017, 3, 31);
-		final LocalDate END_DAY = LocalDate.of(2017, 4, 1);
-//		 final LocalDate END_DAY = LocalDate.of(2017, 10, 13);
+//		final LocalDate END_DAY = LocalDate.of(2017, 4, 1);
+		 final LocalDate END_DAY = LocalDate.of(2017, 10, 13);
 
 		final List<String> ORDERS = Arrays.asList("1番", "2番", "3番", "4番", "5番", "6番", "7番", "8番", "9番");
 
-		List<PlayersOnOneGame> playersListList = getPlayersOnOneGames(OPENING_GAME_DAY, END_DAY);
-		printScore(playersListList);
-		Map<String, List<PlayersOnOneGame>> eachTeamMap = playersListList.parallelStream()
-				.collect(Collectors.groupingBy(PlayersOnOneGame::getTeam));
+		List<PlayersOnOneGame> playersOnOneGames = getPlayersOnOneGames(OPENING_GAME_DAY, END_DAY);
 
-		EachTeamsSummary eachTeamsSummary = makeEachTeamsSummary(eachTeamMap);
+		EachTeamsSummary eachTeamsSummary = makeEachTeamsSummary(playersOnOneGames);
 		eachTeamsSummary.printResult();
 	}
 
-	private static EachTeamsSummary makeEachTeamsSummary(Map<String, List<PlayersOnOneGame>> eachTeamMap) {
-		Map<String, List<Player>> eachTeamsSummary = new HashMap<>();
+	private static EachTeamsSummary makeEachTeamsSummary(List<PlayersOnOneGame> playersOnOneGames) {
+		Map<String, List<PlayersOnOneGame>> eachTeamMap = playersOnOneGames.parallelStream()
+				.collect(Collectors.groupingBy(PlayersOnOneGame::getTeam));
+
+		Map<String, List<ScoreResultOfEachBattingOrder>> eachTeamsSummary = new HashMap<>();
 		for (String team : eachTeamMap.keySet()) {
 			eachTeamsSummary.put(team, makeSummaryForEachOrder(eachTeamMap.get(team)));
 		}
@@ -87,81 +88,11 @@ public class Main {
 		}
 	}
 
-	private static void printScore(List<PlayersOnOneGame> playerListList) {
-		Map<String, List<PlayersOnOneGame>> eachTeamMap = playerListList.parallelStream()
-				.collect(Collectors.groupingBy(PlayersOnOneGame::getTeam));
-
-		eachTeamMap.entrySet().stream().forEach(
-				e -> {
-					System.out.println(e.getKey());
-					printScoreCorePart(e.getValue());
-				}
-		);
-	}
-
-	private static void printScoreCorePart(List<PlayersOnOneGame> playerListList) {
-		List<Player> summaryForEachOrderList = makeSummaryForEachOrder(playerListList);
-		System.out.println("打順,打数,得点,打点,四死球,安打");
-		summaryForEachOrderList.stream().forEach(
-				player -> System.out.println(player.getName()
-											 + "," + player.getBats()
-											 + "," + player.getRun()
-											 + "," + player.getRbi()
-											 + "," + player.getBb()
-											 + "," + player.getHit())
-		);
-
-	}
-
-	private static List<Player> makeSummaryForEachOrder(List<PlayersOnOneGame> playerListList) {
+	private static List<ScoreResultOfEachBattingOrder> makeSummaryForEachOrder(List<PlayersOnOneGame> playeresOnOneGames) {
 		final List<Integer> ORDERS = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7, 8);
-		return ORDERS.stream().map(
+		return ORDERS.parallelStream().map(
 				currentOrder -> {
-					int bats = playerListList.parallelStream()
-							.filter(playersOnOneGame -> playersOnOneGame != null && playersOnOneGame.getPlayerList() != null && !playersOnOneGame.getPlayerList().isEmpty())
-							.mapToInt(players -> {
-								return players.getPlayerList().get(currentOrder).getBats();
-							})
-							.sum();
-					int run = playerListList.parallelStream()
-							.filter(playersOnOneGame -> playersOnOneGame != null && playersOnOneGame.getPlayerList() != null && !playersOnOneGame.getPlayerList().isEmpty())
-							.mapToInt(players -> {
-								return players.getPlayerList().get(currentOrder).getRun();
-							})
-							.sum();
-					int rbi = playerListList.parallelStream()
-							.filter(playersOnOneGame -> playersOnOneGame != null && playersOnOneGame.getPlayerList() != null && !playersOnOneGame.getPlayerList().isEmpty())
-							.mapToInt(players -> {
-								return players.getPlayerList().get(currentOrder).getRbi();
-							})
-							.sum();
-					int hit = playerListList.parallelStream()
-							.filter(playersOnOneGame -> playersOnOneGame != null && playersOnOneGame.getPlayerList() != null && !playersOnOneGame.getPlayerList().isEmpty())
-							.mapToInt(players -> {
-								return players.getPlayerList().get(currentOrder).getHit();
-							})
-							.sum();
-					int bb = playerListList.parallelStream()
-							.filter(playersOnOneGame -> playersOnOneGame != null && playersOnOneGame.getPlayerList() != null && !playersOnOneGame.getPlayerList().isEmpty())
-							.mapToInt(players -> {
-								return players.getPlayerList().get(currentOrder).getBb();
-							})
-							.sum();
-//					System.out.println(String.valueOf(currentOrder + 1)
-//							+ "," + String.valueOf(run)
-//							+ "," + String.valueOf(rbi)
-//							+ "," + String.valueOf(hit + bb)
-//							+ "," + String.valueOf(hit)    //本当は長打にしたい
-//					);
-					Player summaryForTheOrder = new Player();
-					summaryForTheOrder.setName(currentOrder + 1 + "番");
-					summaryForTheOrder.setBats(bats);
-					summaryForTheOrder.setBb(bb);
-					summaryForTheOrder.setHit(hit);
-					summaryForTheOrder.setRbi(rbi);
-					summaryForTheOrder.setRun(run);
-
-					return summaryForTheOrder;
+					return ScoreResultOfEachBattingOrder.buildFromPlayersOnOneGames(playeresOnOneGames, currentOrder);
 				}
 		).collect(Collectors.toList());
 	}

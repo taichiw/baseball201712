@@ -5,23 +5,11 @@ import org.jsoup.select.Elements;
  */
 
 @lombok.Data
-public class Player {
-	String name;
-	int bats;	//打数（Not 打席数）
-	int run;	//得点
-	int hit;	//安打
-	int rbi;	//打点
-	int bb;		//四死球
+public class Player extends PlayersScoreFormat {
 
-	//TPA : Total Plate Appearance (=打席数)
-	//得点 per 打席数
-	public double getRunPerTPA() {
-		return Double.valueOf(run) / Double.valueOf(bats + bb);
-	}
-
-	//生還率
-	public double getSurviveRate() {
-		return Double.valueOf(run) / Double.valueOf(hit + bb);
+	@Override
+	public String toString() {
+		return super.toString();
 	}
 
 	static Player playerBuilderFromElements(Elements tds) {
@@ -32,6 +20,11 @@ public class Player {
 		player.setHit(Integer.valueOf(tds.get(5).text()));
 		player.setRbi(Integer.valueOf(tds.get(6).text()));
 		player.setBb(Integer.valueOf(tds.get(8).text()));
+
+		player.setSingleHit((int)(tds.stream().filter(element -> element.text().indexOf("安") > 0).count()));
+		player.setTwoBaseHit((int)(tds.stream().filter(element -> element.text().indexOf("２") > 0).count()));
+		player.setThreeBaseHit((int)(tds.stream().filter(element -> element.text().indexOf("３") > 0).count()));
+		player.setHomeRun(Integer.valueOf(tds.get(12).text()));
 
 		return player;
 	}

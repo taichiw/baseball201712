@@ -2,16 +2,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.StringUtils;
 
 public class NineBattersInOneTeam {
-	private List<Player> nineBattersInOneTeam;
+	private List<ScoreResultOfEachBattingOrder> nineBattersInOneTeam;
 
-	public NineBattersInOneTeam(List<Player> nineBattersInOneTeam) {
+	public NineBattersInOneTeam(List<ScoreResultOfEachBattingOrder> nineBattersInOneTeam) {
 		this.nineBattersInOneTeam = Collections.unmodifiableList(nineBattersInOneTeam);
 	}
 
-	public List<String> getValues(Function<Player, Number> valueGetter) {
+	public List<String> getValues(Function<ScoreResultOfEachBattingOrder, Number> valueGetter) {
 		return nineBattersInOneTeam.stream()
 				.map(valueGetter).map(numberToStringWithFormatting)
 				.collect(Collectors.toList());
